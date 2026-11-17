@@ -19,6 +19,8 @@ const sample: SavedState = {
   ratio: 2.3,
   unit: 500,
   rounding: "top",
+  abstainers: [0, 1, 2, 0, 3],
+  discount: 0.4,
 };
 
 describe("保存と読み込み", () => {
@@ -51,6 +53,15 @@ describe("保存と読み込み", () => {
     expect(r?.ratio).toBe(3);
     expect(r?.unit).toBe(100);
     expect(r?.total).toBe(0);
+  });
+
+  it("飲まない人と割引率の範囲外は範囲内に直し、項目なしは 0 人として読む", () => {
+    const r = parseSaved(JSON.stringify({ ...sample, abstainers: [5, -2, 9, "x", 1.9], discount: 0.9 }));
+    expect(r?.abstainers).toEqual([0, 0, 5, 0, 1]);
+    expect(r?.discount).toBe(0.5);
+    const old = parseSaved(JSON.stringify({ title: "古い", counts: [1, 1, 1, 1, 1] }));
+    expect(old?.abstainers).toEqual([0, 0, 0, 0, 0]);
+    expect(old?.discount).toBe(0.3);
   });
 
   it("型の違う値は既定の値にする", () => {

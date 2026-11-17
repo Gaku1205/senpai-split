@@ -108,3 +108,67 @@ describe("roundingHead", () => {
     expect(roundingHead(computeSplit({ ...DEFAULT_STATE, counts: [0, 0, 0, 0, 0] }), "up")).toBe("金額を入れると、端数が出ます");
   });
 });
+
+describe("飲まない人", () => {
+  const withAbst = { ...DEFAULT_STATE, counts: [1, 3, 2, 3, 1], abstainers: [0, 1, 0, 2, 0], discount: 0.3 };
+
+  it("飲まない人の1人分は、同じ区分の飲む人より安い", () => {
+    const r = computeSplit(withAbst);
+    for (const s of r.shares) {
+      if (s.abstainers > 0) expect(s.eachAbstain).toBeLessThan(s.each);
+      else expect(s.eachAbstain).toBe(s.each);
+    }
+  });
+
+  it("割引率 0 なら、飲まない人も同じ金額", () => {
+    const r = computeSplit({ ...withAbst, discount: 0 });
+    for (const s of r.shares) expect(s.eachAbstain).toBe(s.each);
+  });
+
+  it("切り上げでも上の区分が持つときでも、会計を下回らず、小計の合計と集まる金額が合う", () => {
+    for (const rounding of ["up", "top"] as const) {
+      const r = computeSplit({ ...withAbst, rounding });
+      expect(r.collected).toBe(r.shares.reduce((s, t) => s + t.subtotal, 0));
+      expect(r.collected).toBeGreaterThanOrEqual(withAbst.total);
+      expect(r.diff).toBeLessThan(withAbst.total * 0.05);
+    }
+  });
+
+  it("飲まない人が 0 人のとき、従来と同じ金額と文面", () => {
+    const r = computeSplit(DEFAULT_STATE);
+    expect(r.shares.map((s) => s.each)).toEqual([6000, 5500, 4900, 4300, 3800]);
+    expect(r.collected).toBe(49000);
+    expect(buildLineText(DEFAULT_STATE)).not.toContain("飲まない");
+  });
+
+  it("人数を超えた飲まない人は、その区分の人数に直す", () => {
+    const r = computeSplit({ ...withAbst, abstainers: [5, 0, 0, 9, 0] });
+    expect(r.shares[0].abstainers).toBe(1);
+    expect(r.shares[3].abstainers).toBe(3);
+  });
+
+  it("文面は、飲まない人がいる区分だけ行に足される", () => {
+    const text = buildLineText(withAbst);
+    const s = computeSplit(withAbst).shares[3];
+    expect(text).toContain(`×3人（うち飲まない2人 ${s.eachAbstain.toLocaleString("ja-JP")}円）`);
+    expect(text.match(/飲まない/g)).toHaveLength(2);
+  });
+
+  it("URL の query に往復し、項目なしは 0 人として読む", () => {
+    const q = encodeState(withAbst);
+    expect(q).toContain("a=0-1-0-2-0");
+    expect(q).toContain("d=30");
+    const back = decodeState(Object.fromEntries(new URLSearchParams(q)));
+    expect(back.abstainers).toEqual(withAbst.abstainers);
+    expect(back.discount).toBe(0.3);
+    expect(encodeState(DEFAULT_STATE)).not.toContain("a=");
+    expect(decodeState({ t: "48600", c: "1-3-2-3-1" }).abstainers).toEqual([0, 0, 0, 0, 0]);
+  });
+
+  it("壊れた query の値は範囲内に直す", () => {
+    const d = decodeState({ t: "48600", c: "1-3-2-3-1", a: "9-x--5-1", d: "99" });
+    expect(d.abstainers).toEqual([1, 0, 0, 3, 1]);
+    expect(d.discount).toBe(0.5);
+    expect(decodeState({ t: "48600", c: "1-1-1-1-1", a: "1", d: "abc" }).discount).toBe(0.3);
+  });
+});
