@@ -1,4 +1,4 @@
-import { DEFAULT_STATE, UNITS, clampDiscount, clampRatio, sanitizeAbstainers, type SavedState, type Unit } from "./split";
+import { DEFAULT_STATE, UNITS, clampDiscount, clampRatio, sanitizeAbstainers, sanitizeNames, type SavedState, type Unit } from "./split";
 
 export const STORAGE_KEY = "senpai-split:last";
 
@@ -50,7 +50,8 @@ export function parseSaved(raw: string | null): SavedState | null {
   );
   const discount =
     typeof data.discount === "number" && Number.isFinite(data.discount) ? clampDiscount(data.discount) : DEFAULT_STATE.discount;
-  return { title, organizer, total, counts, ratio, unit, rounding, abstainers, discount };
+  const names = sanitizeNames(Array.isArray(data.names) ? (data.names as unknown[]) : undefined);
+  return { title, organizer, total, counts, ratio, unit, rounding, abstainers, discount, names };
 }
 
 /** 端末に覚えた前回の会計を読む。無い・壊れている・使えないときは null */
@@ -79,6 +80,7 @@ export function saveState(state: SavedState, storage: StorageLike | null = defau
         rounding: state.rounding,
         abstainers: state.abstainers,
         discount: state.discount,
+        names: sanitizeNames(state.names),
       }),
     );
   } catch {

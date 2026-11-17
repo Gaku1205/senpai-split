@@ -64,7 +64,7 @@ export function ResultView({ state }: { state: SavedState }) {
             </thead>
             <tbody>
               {result.shares.map((s) => (
-                <tr key={s.tier} className={picked === s.index ? "is-picked" : undefined}>
+                <tr key={s.index} className={picked === s.index ? "is-picked" : undefined}>
                   <th scope="row">
                     <span className="tier-tile small" style={{ background: tierFill(s.index) }}>
                       {s.tier}

@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { loadSaved, saveState } from "@/lib/storage";
 import {
+  MAX_NAME_LENGTH,
   MAX_RATIO,
   MIN_RATIO,
+  sanitizeNames,
   PRESETS,
   TIERS,
   UNITS,
@@ -69,6 +71,7 @@ export function SplitApp({ initial }: { initial: SavedState }) {
   }, [state]);
 
   const result = useMemo(() => computeSplit(state), [state]);
+  const names = useMemo(() => sanitizeNames(state.names), [state.names]);
   const query = encodeState(state);
   const url = origin ? `${origin}/r?${query}` : undefined;
   const text = useMemo(() => buildLineText({ ...state, url }), [state, url]);
@@ -86,7 +89,9 @@ export function SplitApp({ initial }: { initial: SavedState }) {
       ...s,
       abstainers: s.abstainers.map((a, j) => (j === i ? Math.min(s.counts[j], Math.max(0, a + delta)) : a)),
     }));
-  const setDiscount = (delta: number) => set({ discount: clampDiscount(state.discount + delta) });
+  const setName = (i: number, name: string) =>
+    setState((s) => ({ ...s, names: TIERS.map((_, j) => (j === i ? name : (s.names[j] ?? ""))) }));
+  const setDiscount =(delta: number) => set({ discount: clampDiscount(state.discount + delta) });
   const hasAbstainers = state.abstainers.some((a) => a > 0);
 
   const shareOf = (i: number) => result.shares.find((s) => s.index === i);
@@ -179,7 +184,7 @@ export function SplitApp({ initial }: { initial: SavedState }) {
                 >
                   <span className="tick-plot" aria-hidden="true">
                     {r.shares.map((x) => (
-                      <span key={x.tier} style={{ height: `${Math.max(10, (x.each / tmax) * 100)}%`, background: tierFill(x.index), flexGrow: x.count }} />
+                      <span key={x.index} style={{ height: `${Math.max(10, (x.each / tmax) * 100)}%`, background: tierFill(x.index), flexGrow: x.count }} />
                     ))}
                   </span>
                   <span className="tick-name">{p.name}</span>
@@ -192,15 +197,24 @@ export function SplitApp({ initial }: { initial: SavedState }) {
         <div className="tiers" role="group" aria-labelledby="tiers-title">
           <h2 id="tiers-title" className="block-title">区分と人数</h2>
           <ul className="tier-list">
-            {TIERS.map((tier, i) => {
+            {TIERS.map((initialName, i) => {
               const share = shareOf(i);
               const count = state.counts[i];
               const abstain = state.abstainers[i];
+              const tier = names[i];
+              const typed = Array.from(state.names[i] ?? "").length;
               return (
-                <li key={tier} className={`tier-row${count === 0 ? " is-zero" : ""}`}>
-                  <span className="tier-tile" style={{ background: tierFill(i) }}>
-                    {tier}
-                  </span>
+                <li key={i} className={`tier-row${count === 0 ? " is-zero" : ""}`}>
+                  <input
+                    className="tier-tile tier-name"
+                    style={{ background: tierFill(i), width: `calc(${Math.max(typed, Array.from(tier).length)}em + 24px)` }}
+                    value={state.names[i] ?? ""}
+                    placeholder={initialName}
+                    autoComplete="off"
+                    aria-label={`${initialName}の名前`}
+                    onChange={(e) => setName(i, Array.from(e.target.value).slice(0, MAX_NAME_LENGTH).join(""))}
+                    onBlur={() => setName(i, tier)}
+                  />
                   <span className="stepper">
                     <button type="button" onClick={() => setCount(i, -1)} disabled={count === 0} aria-label={`${tier}を1人へらす`}>
                       −

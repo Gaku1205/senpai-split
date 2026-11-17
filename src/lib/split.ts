@@ -4,8 +4,29 @@
  * 重みは、人のいる区分だけで、上から下へまっすぐ（線形に）下がる。
  */
 
+/** 区分の初期の名前（上から順）。名前は会に合わせて変えられる */
 export const TIERS = ["上司", "先輩", "同期", "後輩", "新人"] as const;
-export type TierName = (typeof TIERS)[number];
+export type TierName = string;
+
+/** 区分の名前の長さの上限（見た目の1文字で数える） */
+export const MAX_NAME_LENGTH = 8;
+
+/** 名前を1つ直す：制御文字と前後の空白を削る、8字まで、空なら初期値 */
+export function sanitizeName(name: unknown, fallback: string): string {
+  if (typeof name !== "string") return fallback;
+  const cleaned = name.replace(/[\u0000-\u001f\u007f]/g, "").trim();
+  const cut = Array.from(cleaned).slice(0, MAX_NAME_LENGTH).join("").trim();
+  return cut === "" ? fallback : cut;
+}
+
+/** 5つの名前に直す。足りない・壊れた所は初期値。同じ名前が2つあってもよい */
+export function sanitizeNames(names: readonly unknown[] | undefined | null): string[] {
+  return TIERS.map((d, i) => sanitizeName(Array.isArray(names) ? names[i] : undefined, d));
+}
+
+export function isDefaultNames(names: readonly string[]): boolean {
+  return names.every((n, i) => n === TIERS[i]);
+}
 
 /** 端数の扱い。up：区分ごとに切り上げ（余りが出る）／top：下の区分は切り捨て、足りない分をいちばん上の区分が持つ */
 export type Rounding = "up" | "top";
@@ -31,6 +52,8 @@ export interface SplitInput {
   abstainers: number[];
   /** 飲まない人の割引率（0〜0.5、0.1 刻み）。全体で1つ */
   discount: number;
+  /** 区分の名前（上から順に5つ）。無いときは初期値（上司・先輩・同期・後輩・新人） */
+  names?: string[];
 }
 
 export interface TierShare {
@@ -103,7 +126,8 @@ export function computeSplit(input: SplitInput): SplitResult {
   const abst = sanitizeAbstainers(input.abstainers, counts);
   const discount = clampDiscount(input.discount ?? DEFAULT_DISCOUNT);
   const unit = UNITS.includes(input.unit) ? input.unit : 100;
-  const active = TIERS.map((tier, index) => ({ tier, index, count: counts[index], abstainers: abst[index] })).filter(
+  const names = sanitizeNames(input.names);
+  const active = names.map((tier, index) => ({ tier, index, count: counts[index], abstainers: abst[index] })).filter(
     (t) => t.count > 0,
   );
   const weights = weightsFor(active.length, input.ratio);
@@ -250,6 +274,7 @@ export function buildLineText(input: LineTextInput): string {
 export interface SavedState extends SplitInput {
   title: string;
   organizer: string;
+  names: string[];
 }
 
 export const DEFAULT_STATE: SavedState = {
@@ -262,6 +287,7 @@ export const DEFAULT_STATE: SavedState = {
   rounding: "up",
   abstainers: [0, 0, 0, 0, 0],
   discount: DEFAULT_DISCOUNT,
+  names: [...TIERS],
 };
 
 /** 内訳ページの URL の query にする */
@@ -277,6 +303,8 @@ export function encodeState(s: SavedState): string {
     p.set("a", abst.join("-"));
     p.set("d", String(Math.round(clampDiscount(s.discount) * 100)));
   }
+  const names = sanitizeNames(s.names);
+  if (!isDefaultNames(names)) p.set("g", names.join("\n"));
   if (s.title.trim()) p.set("n", s.title.trim().slice(0, 30));
   if (s.organizer.trim()) p.set("k", s.organizer.trim().slice(0, 20));
   return p.toString();
@@ -300,7 +328,9 @@ export function decodeState(p: Params): SavedState {
   const abstainers = sanitizeAbstainers((one(p, "a") ?? "").split("-").map(Number), counts);
   const dText = one(p, "d");
   const d = dText === undefined || dText === "" ? NaN : Number(dText) / 100;
+  const gText = one(p, "g");
   return {
+    names: sanitizeNames(gText === undefined ? undefined : gText.split("\n")),
     abstainers,
     discount: Number.isFinite(d) ? clampDiscount(d) : DEFAULT_DISCOUNT,
     total: one(p, "t") === undefined ? DEFAULT_STATE.total : total,

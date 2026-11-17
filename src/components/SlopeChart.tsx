@@ -47,7 +47,7 @@ export function SlopeChart({ result, ratio, onRatio, highlight = null, onPick, e
       {onPick && !isEmpty ? (
         <div className="slope-callout" style={{ gridTemplateColumns: columns }} aria-live="polite">
           {result.shares.map((s, i) => (
-            <div key={s.tier} className="slope-callout-cell">
+            <div key={s.index} className="slope-callout-cell">
               {highlight === s.index ? (
                 <p className={`slope-callout-figure${i === 0 ? " at-start" : i === last ? " at-end" : ""}`}>
                   <span className="slope-callout-tier">{s.tier}のあなた</span>
@@ -96,7 +96,7 @@ export function SlopeChart({ result, ratio, onRatio, highlight = null, onPick, e
             );
             return onPick ? (
               <button
-                key={s.tier}
+                key={s.index}
                 type="button"
                 role="radio"
                 aria-checked={highlight === s.index}
@@ -107,7 +107,7 @@ export function SlopeChart({ result, ratio, onRatio, highlight = null, onPick, e
                 {inner}
               </button>
             ) : (
-              <div key={s.tier} className={`slope-group${dim ? " is-dim" : ""}`}>
+              <div key={s.index} className={`slope-group${dim ? " is-dim" : ""}`}>
                 {inner}
               </div>
             );
@@ -118,7 +118,7 @@ export function SlopeChart({ result, ratio, onRatio, highlight = null, onPick, e
       {!isEmpty ? (
         <div className="slope-names" style={{ gridTemplateColumns: columns }}>
           {result.shares.map((s) => (
-            <p key={s.tier} className={highlight !== null && highlight !== s.index ? "is-dim" : undefined}>
+            <p key={s.index} className={highlight !== null && highlight !== s.index ? "is-dim" : undefined}>
               <span className="slope-tier">{s.tier}</span>
               <span className="slope-count">{s.count}人</span>
             </p>
