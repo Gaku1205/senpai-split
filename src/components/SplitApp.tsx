@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { loadSaved, saveState } from "@/lib/storage";
 import {
   MAX_RATIO,
   MIN_RATIO,
@@ -36,6 +37,33 @@ export function SplitApp({ initial }: { initial: SavedState }) {
   const [state, setState] = useState<SavedState>(initial);
   const [totalText, setTotalText] = useState(initial.total ? initial.total.toLocaleString("ja-JP") : "");
   const origin = useOrigin();
+  // null：まだ決めていない／"local"：端末に覚える／"url"：URL の会計を開いた（覚えない）
+  const memory = useRef<"local" | "url" | null>(null);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("t")) {
+      memory.current = "url";
+      return;
+    }
+    memory.current = "local";
+    const saved = loadSaved();
+    if (!saved) return;
+    // マウント後に戻す（サーバー描画との食い違いを出さない）
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setState(saved);
+      setTotalText(saved.total ? saved.total.toLocaleString("ja-JP") : "");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    // URL の会計（"url"）のときは保存しない。戻す値は上の effect が読み済みで、次の描画で同じ値が保存される
+    if (memory.current === "local") saveState(state);
+  }, [state]);
 
   const result = useMemo(() => computeSplit(state), [state]);
   const query = encodeState(state);
