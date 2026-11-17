@@ -21,6 +21,7 @@ const sample: SavedState = {
   rounding: "top",
   abstainers: [0, 1, 2, 0, 3],
   discount: 0.4,
+  names: ["部長", "課長", "同期", "後輩", "新人"],
 };
 
 describe("保存と読み込み", () => {
@@ -62,6 +63,15 @@ describe("保存と読み込み", () => {
     const old = parseSaved(JSON.stringify({ title: "古い", counts: [1, 1, 1, 1, 1] }));
     expect(old?.abstainers).toEqual([0, 0, 0, 0, 0]);
     expect(old?.discount).toBe(0.3);
+  });
+
+  it("区分の名前：古い保存は初期値、壊れた名前は項目ごとに直す", () => {
+    const { names: _omit, ...old } = sample;
+    void _omit;
+    expect(parseSaved(JSON.stringify(old))?.names).toEqual(["上司", "先輩", "同期", "後輩", "新人"]);
+    const r = parseSaved(JSON.stringify({ ...sample, names: ["  OB  ", 5, "", "あ".repeat(20)] }));
+    expect(r?.names).toEqual(["OB", "先輩", "同期", "あ".repeat(8), "新人"]);
+    expect(parseSaved(JSON.stringify({ ...sample, names: "x" }))?.names).toEqual(["上司", "先輩", "同期", "後輩", "新人"]);
   });
 
   it("型の違う値は既定の値にする", () => {

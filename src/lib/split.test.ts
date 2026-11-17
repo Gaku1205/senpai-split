@@ -7,6 +7,8 @@ import {
   encodeState,
   parseYen,
   roundingHead,
+  sanitizeName,
+  sanitizeNames,
   weightsFor,
 } from "./split";
 
@@ -94,6 +96,30 @@ describe("encodeState / decodeState", () => {
     expect(s.ratio).toBe(3);
     expect(s.unit).toBe(100);
     expect(s.rounding).toBe("up");
+  });
+});
+
+describe("区分の名前", () => {
+  const named = { ...DEFAULT_STATE, names: ["部長", "課長", "同期", "後輩", "新人"] };
+  it("直し方：空白を削る・8字まで・空は初期値・足りなければ初期値で埋める", () => {
+    expect(sanitizeNames(["  部長 ", "", "あ".repeat(12)])).toEqual(["部長", "先輩", "あ".repeat(8), "後輩", "新人"]);
+    expect(sanitizeNames(undefined)).toEqual(["上司", "先輩", "同期", "後輩", "新人"]);
+    expect(sanitizeNames(["OB", "OB"]).slice(0, 2)).toEqual(["OB", "OB"]);
+    expect(sanitizeName("👨‍👩‍👧x", "上司")).not.toBe("");
+  });
+  it("computeSplit・端数の文・LINEの文面が変えた名前を使う", () => {
+    expect(computeSplit(named).shares[0].tier).toBe("部長");
+    expect(roundingHead(computeSplit({ ...named, rounding: "top" }), "top")).toBe("端数は部長が持つ");
+    const text = buildLineText(named);
+    expect(text).toContain("部長　");
+    expect(text).not.toContain("上司");
+    expect(computeSplit(DEFAULT_STATE).shares[0].tier).toBe("上司");
+  });
+  it("URL：すべて初期値なら g を付けない。記号・日本語・8字も往復で同じ", () => {
+    expect(new URLSearchParams(encodeState(DEFAULT_STATE)).has("g")).toBe(false);
+    const s = { ...DEFAULT_STATE, names: ["部長&課長=", "a,b/c?#%", "あ".repeat(8), "O B", "😀新人"] };
+    const back = decodeState(Object.fromEntries(new URLSearchParams(encodeState(s))));
+    expect(back.names).toEqual(s.names);
   });
 });
 

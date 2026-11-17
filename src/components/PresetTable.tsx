@@ -66,7 +66,7 @@ export function PresetTable({ state, onPick }: Props) {
                 <span className="preset-plot" aria-hidden="true">
                   {r.shares.map((s) => (
                     <span
-                      key={s.tier}
+                      key={s.index}
                       style={{ height: `${Math.max(4, (s.each / max) * 100)}%`, background: tierFill(s.index), flexGrow: s.count }}
                     />
                   ))}
