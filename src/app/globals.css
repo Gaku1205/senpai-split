@@ -1,10 +1,1581 @@
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
+/* senpai-split — 色・文字・寸法は docs/design.md に書いた物だけ */
+:root {
+  --ground: #f3f5f7;
+  --surface: #ffffff;
+  --raised: #f2f8fd;
+  --border: #e6e6e6;
+  --rule: #eef0f2;
+  --control: #d6d9dd;
+  --text: #1b1d1f;
+  --muted: #5c6064;
+  --night: #1b1d1f;
+  --night-muted: #b9bdc2;
+  --gold-ink: #2b1c00;
+  --gold: #eebb3a;
+  --gold-deep: #b87800;
+  --negative: #c41c29;
+  --radius-card: 20px;
+  --radius-control: 10px;
+  --radius-small: 8px;
+  --gap: 24px;
+  --pad: 32px;
+  --fs-title: 28px;
+  --fs-section: 20px;
+  --fs-body: 16px;
+  --fs-small: 14px;
+  --font: var(--font-figure), var(--font-ja), "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.container {
-  max-width: 720px;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  overflow-x: clip;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  font-feature-settings: "palt" 1;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 3px solid var(--gold-deep);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+p,
+h1,
+h2,
+h3,
+dl,
+dd,
+ul,
+figure {
+  margin: 0;
+}
+
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+/* ---------- ヘッダー ---------- */
+.site-header {
+  max-width: 1248px;
   margin: 0 auto;
-  padding: 48px 20px;
+  padding: 20px 24px 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 72px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  text-decoration: none;
+  min-height: 44px;
+}
+
+.brand-name {
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.brand-what {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+
+.header-nav {
+  margin-left: auto;
+}
+
+.header-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-control);
+  background: var(--ground);
+  color: var(--text);
+  text-decoration: none;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  transition: background 160ms var(--ease);
+}
+
+.header-nav a:hover {
+  background: #e4e7ea;
+}
+
+/* ---------- 全体の枠 ----------
+   PC：中央 1200px・12列・ガター 24px。左7列（計算）＋右5列（文面）。
+   7列 = 7*76 + 6*24 = 676px、5列 = 5*76 + 4*24 = 476px、676 + 24 + 476 = 1176 ≒ 1200 - 余白 */
+.page {
+  max-width: 1248px;
+  margin: 0 auto;
+  padding: 16px 24px 0;
+}
+
+.app-grid {
+  display: grid;
+}
+
+.screen-title {
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.block-title {
+  font-size: var(--fs-section);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.section-title {
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* ---------- 計算の箱 ---------- */
+.app-top {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--gap);
+  align-items: start;
+}
+
+.calc > *,
+.line-inner > * {
+  min-width: 0;
+}
+
+/* 白い箱に入れない：白い地に、坂の柱が床から直接立つ */
+.calc {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 8px 0 0;
+  display: grid;
+  gap: 28px;
+}
+
+.calc-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.field-title {
+  flex: 1 1 220px;
+}
+
+.field-title input {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--ground);
+  padding: 0 14px;
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+
+.total {
+  display: grid;
+  gap: 4px;
+}
+
+.total-label {
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.total-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border-bottom: 3px solid var(--text);
+  padding-bottom: 6px;
+}
+
+.total-input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-size: 80px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  padding: 0;
+}
+
+.total-input:focus-visible {
+  outline: none;
+}
+
+.total-row:focus-within {
+  border-bottom-color: var(--gold-deep);
+}
+
+.total-yen {
+  flex: 0 0 auto;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.total-people {
+  margin-left: auto;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: var(--fs-section);
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 席順の坂 ---------- */
+.slope {
+  --slope-min: 96px;
+  --slope-label: 44px;
+  --slope-h: 320px;
+  display: grid;
+}
+
+.slope-small {
+  --slope-h: 260px;
+}
+
+.slope-wide {
+  --slope-h: 340px;
+  --slope-min: 120px;
+}
+
+.slope-plot {
+  display: grid;
+  gap: 10px;
+  height: var(--slope-h);
+  align-items: stretch;
+  touch-action: pan-x;
+}
+
+.slope-drag .slope-plot {
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.slope-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+  transition: opacity 200ms var(--ease);
+}
+
+.slope-amount {
+  flex: 0 0 auto;
+  height: var(--slope-label);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  padding-bottom: 6px;
+  white-space: nowrap;
+}
+
+.slope-num {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.slope-unit {
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+
+.slope-bars {
+  display: flex;
+  gap: 4px;
+  transition: height 260ms var(--ease);
+}
+
+.slope-bar {
+  flex: 1 1 0;
+  border-radius: var(--radius-small) var(--radius-small) 0 0;
+}
+
+/* 床の線は画面の端から端まで通す */
+.slope-floor {
+  height: 4px;
+  background: var(--text);
+  box-shadow: 0 0 0 100vmax var(--text);
+  clip-path: inset(0 -100vmax);
+}
+
+.slope-names {
+  display: grid;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.slope-names p {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.3;
+  transition: opacity 200ms var(--ease);
+}
+
+.slope-tier {
+  font-weight: 700;
+  font-size: var(--fs-body);
+}
+
+.slope-count {
+  font-size: var(--fs-small);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.slope-seats {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 10px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.slope-empty {
+  align-self: end;
+  justify-self: center;
+  padding-bottom: 24px;
+  font-size: var(--fs-body);
+  color: var(--muted);
+}
+
+.is-dim {
+  opacity: 0.32;
+}
+
+/* 内訳のページ：柱そのものを押して、自分の区分を選ぶ */
+button.slope-group {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  height: 100%;
+  cursor: pointer;
+  transition: opacity 200ms var(--ease), transform 120ms var(--ease);
+}
+
+button.slope-group:hover.is-dim {
+  opacity: 0.6;
+}
+
+button.slope-group:active {
+  transform: scale(0.98);
+}
+
+.slope-pick .slope-bar {
+  transition: filter 160ms var(--ease);
+}
+
+.slope-callout {
+  display: grid;
+  gap: 10px;
+  height: 168px;
+}
+
+.slope-callout-cell {
+  position: relative;
+  min-width: 0;
+}
+
+.slope-callout-figure {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.slope-callout-figure.at-start {
+  left: 0;
+  transform: none;
+  justify-items: start;
+}
+
+.slope-callout-figure.at-end {
+  left: auto;
+  right: 0;
+  transform: none;
+  justify-items: end;
+}
+
+.slope-callout-tier {
+  font-size: var(--fs-section);
+  font-weight: 700;
+  padding-bottom: 8px;
+}
+
+.slope-callout-num {
+  font-size: 104px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.slope-callout-num small {
+  font-size: 32px;
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+
+/* ---------- 傾斜のつまみ ---------- */
+.tilt {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px 28px;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.tilt-read {
+  display: grid;
+  gap: 0;
+}
+
+.tilt-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.tilt-num {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tilt-unit {
+  font-size: var(--fs-section);
+  font-weight: 700;
+}
+
+.tilt-say {
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+
+.tilt-range {
+  display: grid;
+  gap: 4px;
+}
+
+.tilt-range input[type="range"] {
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  accent-color: var(--gold-deep);
+  cursor: pointer;
+}
+
+.tilt-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+/* 傾斜の目安の5つの区切り：小さい坂の絵つき。画面幅に収める */
+.ticks {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.tick {
+  display: grid;
+  justify-items: stretch;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 10px 8px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--ground);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  transition: background 160ms var(--ease), transform 120ms var(--ease);
+}
+
+.tick:hover {
+  background: #e4e7ea;
+}
+
+.tick:active {
+  transform: scale(0.97);
+}
+
+.tick-plot {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 36px;
+  border-bottom: 3px solid var(--text);
+  opacity: 0.4;
+}
+
+.tick-plot span {
+  flex-basis: 0;
+  border-radius: 3px 3px 0 0;
+}
+
+.tick-name {
+  white-space: nowrap;
+  text-align: center;
+}
+
+.tick[aria-pressed="true"] {
+  background: #fdf3d6;
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+
+.tick[aria-pressed="true"] .tick-plot {
+  opacity: 1;
+}
+
+/* ---------- 区分と人数 ---------- */
+.tiers {
+  display: grid;
+  gap: 12px;
+}
+
+.tier-list {
+  display: grid;
+}
+
+.tier-row {
+  display: grid;
+  grid-template-columns: 96px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  min-height: 72px;
+  border-top: 1px solid var(--rule);
+}
+
+.tier-row:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.tier-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  border-radius: var(--radius-control);
+  color: var(--gold-ink);
+  font-weight: 700;
+  font-size: var(--fs-body);
+}
+
+.tier-tile.small {
+  height: 32px;
+  min-width: 72px;
+  padding: 0 12px;
+  font-size: var(--fs-small);
+}
+
+.is-zero .tier-tile {
+  opacity: 0.45;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stepper button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ground);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+  transition: background 160ms var(--ease), transform 120ms var(--ease);
+}
+
+.stepper button:hover:not(:disabled) {
+  background: #e4e7ea;
+}
+
+.stepper button:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.stepper button:disabled {
+  color: #9a9ea3;
+}
+
+.stepper output {
+  min-width: 52px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepper output small {
+  font-size: var(--fs-small);
+  margin-left: 1px;
+}
+
+.tier-money {
+  display: grid;
+  justify-items: end;
+  line-height: 1.3;
+}
+
+.tier-each {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tier-sub {
+  font-size: var(--fs-small);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 端数 ---------- */
+.rounding {
+  display: grid;
+  gap: 12px;
+}
+
+.seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  background: var(--ground);
+  border-radius: 14px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.seg button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  transition: background 160ms var(--ease);
+}
+
+.seg button:hover {
+  background: #e4e7ea;
+}
+
+.seg button[aria-checked="true"] {
+  background: var(--surface);
+}
+
+.sums {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 8px;
+  background: var(--ground);
+  border-radius: 16px;
+  padding: 16px 0;
+}
+
+.sums div {
+  padding: 0 20px;
+}
+
+.sums div + div {
+  border-left: 1px solid var(--control);
+}
+
+.sums dt {
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.sums dd {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sums .is-short dd {
+  color: var(--negative);
+}
+
+.rounding-head {
+  margin-top: 8px;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.rounding-note {
+  font-size: var(--fs-body);
+}
+
+/* ---------- LINEに貼る文面（墨色の面） ---------- */
+.line {
+  position: sticky;
+  top: 16px;
+}
+
+.line-inner {
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--night);
+  min-height: calc(100vh - 32px);
+  align-content: start;
+  color: #fff;
+  border-radius: var(--radius-card);
+  padding: var(--pad);
+  display: grid;
+  gap: 20px;
+}
+
+.line-title {
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.line-organizer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--fs-small);
+  color: var(--night-muted);
+}
+
+.line-organizer input {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: #2c2f32;
+  color: #fff;
+  padding: 0 14px;
+  font-size: var(--fs-body);
+}
+
+.talk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.talk-from {
+  font-size: var(--fs-small);
+  color: var(--night-muted);
+  padding-left: 4px;
+}
+
+.bubble {
+  margin: 0;
+  background: #fff;
+  color: var(--text);
+  border-radius: 6px 20px 20px 20px;
+  padding: 20px 22px;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-variant-numeric: tabular-nums;
+}
+
+.bubble-url {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #1d5fd6;
+}
+
+.line-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.copy {
+  min-height: 56px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--gold-ink);
+  font-size: 18px;
+  font-weight: 700;
+  transition: background 160ms var(--ease), transform 120ms var(--ease);
+}
+
+.copy:hover:not(:disabled) {
+  background: #f3c75a;
+}
+
+.copy:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.copy:disabled {
+  background: #3a3d40;
+  color: var(--night-muted);
+}
+
+.line-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  color: #fff;
+  font-size: var(--fs-small);
+  text-underline-offset: 4px;
+}
+
+.dock {
+  display: none;
+}
+
+/* ---------- 傾斜の目安 ----------
+   5本の坂を横に並べ、同じ床の線の上で傾きを見比べる。押すのは坂そのもの */
+.presets {
+  margin-top: 96px;
+  display: grid;
+  gap: 40px;
+}
+
+.presets-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.presets-lead {
+  margin-top: 8px;
+  font-size: var(--fs-body);
+  max-width: 34em;
+}
+
+.presets-now {
+  display: grid;
+  justify-items: end;
+}
+
+.presets-now span {
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.presets-now strong {
+  font-size: 40px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.preset-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.preset {
+  display: grid;
+  grid-template-rows: auto 240px auto;
+  align-content: start;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  transition: transform 120ms var(--ease);
+}
+
+.preset:active {
+  transform: scale(0.99);
+}
+
+.preset-money {
+  display: grid;
+  align-content: end;
+  gap: 2px;
+  height: 100px;
+  padding: 0 16px 12px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.preset-money small {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  margin-right: 8px;
+  letter-spacing: 0;
+}
+
+.preset-plot {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 0 16px;
+  border-bottom: 4px solid var(--text);
+}
+
+.preset-plot span {
+  flex-basis: 0;
+  border-radius: 6px 6px 0 0;
+  opacity: 0.32;
+  transition: height 260ms var(--ease), opacity 200ms var(--ease);
+}
+
+.preset:hover .preset-plot span {
+  opacity: 0.6;
+}
+
+.preset.is-current .preset-plot span {
+  opacity: 1;
+}
+
+.preset-name {
+  display: grid;
+  gap: 4px;
+  padding: 16px 16px 0;
+  line-height: 1.5;
+}
+
+.preset-name strong {
+  font-size: 24px;
+  line-height: 1.3;
+}
+
+.preset-name span {
+  font-size: var(--fs-body);
+}
+
+.preset.is-current .preset-name strong {
+  display: inline-block;
+  width: fit-content;
+  padding: 0 10px;
+  margin-left: -10px;
+  border-radius: var(--radius-small);
+  background: var(--gold);
+  color: var(--gold-ink);
+}
+
+/* ---------- フッター（金色の面） ---------- */
+.site-footer {
+  margin-top: 120px;
+  background: var(--gold);
+  color: var(--gold-ink);
+}
+
+.footer-inner {
+  max-width: 1248px;
+  margin: 0 auto;
+  padding: 64px 24px 72px;
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: var(--gap);
+}
+
+.footer-brand {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.footer-name {
+  font-size: var(--fs-title);
+  font-weight: 700;
+}
+
+.footer-how {
+  display: grid;
+  gap: 16px;
+  max-width: 40em;
+}
+
+.footer-title {
+  font-size: var(--fs-section);
+  font-weight: 700;
+}
+
+.footer-note {
+  font-size: var(--fs-small);
+}
+
+/* ---------- 内訳のページ ----------
+   坂を画面の幅いっぱいに。柱を押すと、その柱の上に自分の金額が大きく出る。
+   表は坂の下の墨色の帯に細く */
+.result {
+  display: grid;
+  gap: 0;
+}
+
+.result-stage {
+  display: grid;
+  gap: 8px;
+  padding-top: 16px;
+}
+
+.result-head {
+  display: grid;
+  gap: 4px;
+}
+
+.result-meta {
+  font-size: var(--fs-section);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-hint {
+  font-size: var(--fs-body);
+}
+
+.result-empty {
+  font-size: var(--fs-body);
+}
+
+.breakdown {
+  margin-top: 56px;
+  background: var(--night);
+  color: #fff;
+  margin-inline: calc(50% - 50vw);
+  padding-inline: calc(50vw - 50%);
+}
+
+.breakdown-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: var(--gap);
+  padding: 56px 0;
+  align-items: start;
+}
+
+.breakdown-side {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+
+.breakdown-title {
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.breakdown-head {
+  margin-top: 8px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.breakdown-note {
+  font-size: var(--fs-body);
+}
+
+.breakdown .table th,
+.breakdown .table td {
+  border-bottom-color: #3a3d40;
+  padding: 10px 8px;
+}
+
+.breakdown .table thead th {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.breakdown .again {
+  margin-top: 12px;
+  background: var(--gold);
+  color: var(--gold-ink);
+}
+
+.breakdown .table tr.is-picked td,
+.breakdown .table tr.is-picked th {
+  background: #2c2f32;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  font-weight: 400;
+}
+
+.table thead th {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.table .num {
+  text-align: right;
+}
+
+.table .strong {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.table tfoot th,
+.table tfoot td {
+  border-bottom: 0;
+  font-weight: 700;
+}
+
+.table tr.is-picked td,
+.table tr.is-picked th {
+  background: #fdf3d6;
+}
+
+.again {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 24px;
+  border-radius: 999px;
+  background: var(--text);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  width: fit-content;
+  transition: transform 120ms var(--ease);
+}
+
+.again:active {
+  transform: scale(0.98);
+}
+
+/* PC：文面の墨色の面を画面の右端まで通し、金の柱と墨の面の2つで画面を割る */
+@media (min-width: 1081px) {
+  .line-inner {
+    border-radius: var(--radius-card) 0 0 var(--radius-card);
+    box-shadow: 0 0 0 100vmax var(--night);
+    clip-path: inset(0 -100vmax 0 0);
+  }
+}
+
+/* ---------- タブレット ---------- */
+@media (max-width: 1080px) {
+  .line-inner {
+    min-height: 0;
+  }
+
+  .app-top,
+  .result {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .line {
+    position: static;
+  }
+
+  .presets {
+    margin-top: 72px;
+  }
+
+  .breakdown-inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 狭い画面：目安の坂は、小さい坂＋名前＋金額の行にする（行全体が押せる） */
+@media (max-width: 860px) {
+  .preset-list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .preset {
+    grid-template-columns: 88px minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    grid-template-areas: "plot name money";
+    align-items: center;
+    gap: 14px;
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .preset.is-current {
+    background: #fdf3d6;
+  }
+
+  .preset-plot {
+    grid-area: plot;
+    height: 56px;
+    padding: 0;
+    gap: 2px;
+    border-bottom-width: 3px;
+  }
+
+  .preset-plot span {
+    border-radius: 3px 3px 0 0;
+  }
+
+  .preset-name {
+    grid-area: name;
+    padding: 0;
+    gap: 0;
+  }
+
+  .preset-name strong {
+    font-size: 20px;
+  }
+
+  .preset-name span {
+    font-size: 15px;
+  }
+
+  .preset.is-current .preset-name strong {
+    background: transparent;
+    padding: 0;
+    margin: 0;
+  }
+
+  .preset-money {
+    grid-area: money;
+    justify-items: end;
+    height: auto;
+    padding: 0;
+    font-size: 18px;
+  }
+
+  .preset-money small {
+    font-size: 13px;
+    margin-right: 4px;
+  }
+
+  .presets-now {
+    justify-items: start;
+  }
+}
+
+/* ---------- スマホ ---------- */
+@media (max-width: 640px) {
+  :root {
+    --pad: 20px;
+    --fs-title: 24px;
+  }
+
+  .site-header {
+    padding: 8px 16px 0;
+    min-height: 56px;
+    gap: 10px;
+  }
+
+  .brand-what {
+    display: none;
+  }
+
+  .page {
+    padding: 8px 16px 0;
+  }
+
+  .app-top {
+    gap: 12px;
+  }
+
+  .calc {
+    gap: 18px;
+    padding-bottom: 48px; /* 下に貼りつくコピーの帯と重ならないように */
+  }
+
+  .total-input {
+    font-size: 56px;
+  }
+
+  .total-yen {
+    font-size: 22px;
+  }
+
+  .slope {
+    --slope-min: 52px;
+    --slope-label: 34px;
+    --slope-h: 200px;
+  }
+
+  .slope-plot,
+  .slope-names {
+    gap: 6px;
+  }
+
+  .slope-num {
+    font-size: 19px;
+  }
+
+  .slope-unit {
+    display: none;
+  }
+
+  .slope-bars {
+    gap: 2px;
+  }
+
+  .slope-tier {
+    font-size: var(--fs-small);
+  }
+
+  .tilt {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .tilt-range {
+    gap: 0;
+  }
+
+  .ticks {
+    margin-top: 6px;
+  }
+
+  .ticks {
+    gap: 4px;
+  }
+
+  .tick {
+    padding: 8px 4px 6px;
+    font-size: 13px;
+  }
+
+  .tick-plot {
+    height: 28px;
+  }
+
+  .slope-wide {
+    --slope-min: 52px;
+    --slope-h: 260px;
+  }
+
+  .slope-callout {
+    height: 112px;
+  }
+
+  .slope-callout-tier {
+    font-size: var(--fs-body);
+    padding-bottom: 4px;
+  }
+
+  .slope-callout-num {
+    font-size: 72px;
+  }
+
+  .slope-callout-num small {
+    font-size: 22px;
+  }
+
+  .result-meta {
+    font-size: var(--fs-body);
+  }
+
+  .breakdown {
+    margin-top: 40px;
+  }
+
+  .breakdown-inner {
+    padding: 40px 0;
+  }
+
+  .tilt-read {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .tilt-num {
+    font-size: 36px;
+  }
+
+  .tier-row {
+    grid-template-columns: 64px auto minmax(0, 1fr);
+    gap: 10px;
+    min-height: 68px;
+  }
+
+  .tier-tile {
+    font-size: var(--fs-small);
+  }
+
+  .stepper output {
+    min-width: 40px;
+    font-size: 20px;
+  }
+
+  .tier-each {
+    font-size: 18px;
+  }
+
+  .tier-sub {
+    font-size: 12px;
+  }
+
+  .sums div {
+    padding: 0 12px;
+  }
+
+  .sums dd {
+    font-size: 17px;
+  }
+
+  .line-inner {
+    padding: 24px 20px;
+  }
+
+  .dock {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: var(--night);
+    transition: transform 220ms var(--ease);
+  }
+
+  .dock.is-hidden {
+    transform: translateY(110%);
+  }
+
+  .dock .copy {
+    width: 100%;
+  }
+
+  .presets {
+    margin-top: 56px;
+    gap: 24px;
+  }
+
+  .presets-now strong {
+    font-size: 32px;
+  }
+
+  .preset {
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 10px 8px;
+  }
+
+  .preset-plot {
+    height: 44px;
+  }
+
+  .preset-name strong {
+    font-size: 18px;
+  }
+
+  .preset-name span {
+    font-size: 13px;
+  }
+
+  .preset-money {
+    font-size: 16px;
+  }
+
+  .site-footer {
+    margin-top: 72px;
+    padding-bottom: 76px;
+  }
+
+  .footer-inner {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 48px 20px 40px;
+  }
+
+  .table th,
+  .table td {
+    padding: 10px 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
+
+/* 内訳のページは、墨色の帯の下にすぐ金色のフッターを続ける（間に白い帯を残さない） */
+body:has(.breakdown) .site-footer {
+  margin-top: 0;
 }

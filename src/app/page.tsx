@@ -1,10 +1,23 @@
-import { greeting } from "@/lib/greeting";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SplitApp } from "@/components/SplitApp";
+import { decodeState } from "@/lib/split";
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const initial = decodeState(await searchParams);
   return (
-    <main className="container">
-      <h1>{greeting("世界")}</h1>
-      <p>このアプリは ai-dev-template から作られました。docs/spec.md に仕様を書いて始めます。</p>
-    </main>
+    <>
+      <SiteHeader>
+        <a href="#presets">傾斜の目安</a>
+      </SiteHeader>
+      <main className="page">
+        <SplitApp initial={initial} />
+      </main>
+      <SiteFooter />
+    </>
   );
 }
