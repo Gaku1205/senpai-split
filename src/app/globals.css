@@ -616,6 +616,34 @@ button.slope-group:active {
   border-bottom: 1px solid var(--rule);
 }
 
+.tier-abstain {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+
+.tier-abstain-label {
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.tier-each-abstain {
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.discount {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
 .tier-tile {
   display: inline-flex;
   align-items: center;

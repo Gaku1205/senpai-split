@@ -14,6 +14,9 @@ export type Unit = 10 | 100 | 500 | 1000;
 export const UNITS: readonly Unit[] = [10, 100, 500, 1000];
 export const MIN_RATIO = 1;
 export const MAX_RATIO = 3;
+export const MIN_DISCOUNT = 0;
+export const MAX_DISCOUNT = 0.5;
+export const DEFAULT_DISCOUNT = 0.3;
 
 export interface SplitInput {
   /** 会計の合計（円） */
@@ -24,6 +27,10 @@ export interface SplitInput {
   ratio: number;
   unit: Unit;
   rounding: Rounding;
+  /** 区分ごとの「うち飲まない人」の人数。counts と同じ順・長さ（0〜その区分の人数） */
+  abstainers: number[];
+  /** 飲まない人の割引率（0〜0.5、0.1 刻み）。全体で1つ */
+  discount: number;
 }
 
 export interface TierShare {
@@ -32,10 +39,16 @@ export interface TierShare {
   count: number;
   /** 重み（いちばん下の区分を 1 とする） */
   weight: number;
-  /** 1人あたりの金額（円） */
+  /** 1人あたりの金額（円）。飲む人の分 */
   each: number;
-  /** その区分の合計（円） */
+  /** その区分の合計（円）。飲まない人を含む */
   subtotal: number;
+  /** うち飲まない人の人数 */
+  abstainers: number;
+  /** 飲まない人の1人分（円）。飲まない人がいないときは each と同じ */
+  eachAbstain: number;
+  /** 飲まない人の小計（円） */
+  subtotalAbstain: number;
 }
 
 export interface SplitResult {
@@ -55,10 +68,24 @@ export function clampRatio(r: number): number {
   return Math.min(MAX_RATIO, Math.max(MIN_RATIO, Math.round(r * 10) / 10));
 }
 
+export function clampDiscount(d: number): number {
+  if (!Number.isFinite(d)) return DEFAULT_DISCOUNT;
+  return Math.min(MAX_DISCOUNT, Math.max(MIN_DISCOUNT, Math.round(d * 10) / 10));
+}
+
 function sanitizeCounts(counts: number[]): number[] {
   return TIERS.map((_, i) => {
     const c = Math.floor(Number(counts[i] ?? 0));
     return Number.isFinite(c) && c > 0 ? Math.min(c, 99) : 0;
+  });
+}
+
+/** 飲まない人の人数を、0〜その区分の人数に直す */
+export function sanitizeAbstainers(abstainers: number[] | undefined, counts: number[]): number[] {
+  const cs = sanitizeCounts(counts);
+  return TIERS.map((_, i) => {
+    const a = Math.floor(Number(abstainers?.[i] ?? 0));
+    return Number.isFinite(a) && a > 0 ? Math.min(a, cs[i]) : 0;
   });
 }
 
@@ -73,34 +100,67 @@ export function weightsFor(activeCount: number, ratio: number): number[] {
 export function computeSplit(input: SplitInput): SplitResult {
   const total = Math.max(0, Math.floor(Number.isFinite(input.total) ? input.total : 0));
   const counts = sanitizeCounts(input.counts);
+  const abst = sanitizeAbstainers(input.abstainers, counts);
+  const discount = clampDiscount(input.discount ?? DEFAULT_DISCOUNT);
   const unit = UNITS.includes(input.unit) ? input.unit : 100;
-  const active = TIERS.map((tier, index) => ({ tier, index, count: counts[index] })).filter((t) => t.count > 0);
+  const active = TIERS.map((tier, index) => ({ tier, index, count: counts[index], abstainers: abst[index] })).filter(
+    (t) => t.count > 0,
+  );
   const weights = weightsFor(active.length, input.ratio);
   const people = active.reduce((s, t) => s + t.count, 0);
-  const weightSum = active.reduce((s, t, i) => s + t.count * weights[i], 0);
+  // 飲む人の重み＝区分の重み、飲まない人の重み＝区分の重み×(1−割引率)
+  const weightSum = active.reduce(
+    (s, t, i) => s + (t.count - t.abstainers) * weights[i] + t.abstainers * weights[i] * (1 - discount),
+    0,
+  );
 
   if (people === 0 || total === 0) {
-    const shares = active.map((t, i) => ({ ...t, weight: weights[i], each: 0, subtotal: 0 }));
+    const shares = active.map((t, i) => ({
+      ...t,
+      weight: weights[i],
+      each: 0,
+      subtotal: 0,
+      eachAbstain: 0,
+      subtotalAbstain: 0,
+    }));
     return { shares, people, collected: 0, diff: -total, actualRatio: 1 };
   }
 
   const raw = active.map((_, i) => (total * weights[i]) / weightSum);
+  const rawAbstain = raw.map((v) => v * (1 - discount));
   let eaches: number[];
+  let eachesAbstain: number[];
   if (input.rounding === "top") {
     eaches = raw.map((v) => Math.floor(v / unit) * unit);
-    // 足りない分を、いちばん上の区分の人数で割って持つ（1円単位で切り上げ）
-    const short = total - active.reduce((s, t, i) => s + t.count * eaches[i], 0);
-    if (short > 0) eaches[0] += Math.ceil(short / active[0].count);
+    eachesAbstain = rawAbstain.map((v) => Math.floor(v / unit) * unit);
+    // 足りない分を、いちばん上の区分の飲む人（いなければ飲まない人）が持つ（1円単位で切り上げ）
+    const paid = active.reduce(
+      (s, t, i) => s + (t.count - t.abstainers) * eaches[i] + t.abstainers * eachesAbstain[i],
+      0,
+    );
+    const short = total - paid;
+    if (short > 0) {
+      const topDrinkers = active[0].count - active[0].abstainers;
+      if (topDrinkers > 0) eaches[0] += Math.ceil(short / topDrinkers);
+      else eachesAbstain[0] += Math.ceil(short / active[0].abstainers);
+    }
   } else {
     eaches = raw.map((v) => Math.ceil(v / unit) * unit);
+    eachesAbstain = rawAbstain.map((v) => Math.ceil(v / unit) * unit);
   }
 
-  const shares = active.map((t, i) => ({
-    ...t,
-    weight: weights[i],
-    each: eaches[i],
-    subtotal: eaches[i] * t.count,
-  }));
+  const shares = active.map((t, i) => {
+    // 飲まない人がいない区分は、eachAbstain を each と同じにする
+    const eachAbstain = t.abstainers > 0 ? eachesAbstain[i] : eaches[i];
+    return {
+      ...t,
+      weight: weights[i],
+      each: eaches[i],
+      eachAbstain,
+      subtotalAbstain: eachAbstain * t.abstainers,
+      subtotal: eaches[i] * (t.count - t.abstainers) + eachAbstain * t.abstainers,
+    };
+  });
   const collected = shares.reduce((s, t) => s + t.subtotal, 0);
   const last = eaches[eaches.length - 1];
   const actualRatio = last > 0 ? Math.round((eaches[0] / last) * 100) / 100 : 1;
@@ -167,7 +227,14 @@ export function buildLineText(input: LineTextInput): string {
   lines.push(`合計 ${yen(input.total)}／${result.people}人`);
   lines.push("");
   for (const s of result.shares) {
-    lines.push(`${s.tier}　${yen(s.each)}${s.count > 1 ? ` ×${s.count}人` : ""}`);
+    const allAbstain = s.abstainers === s.count;
+    const note =
+      s.abstainers === 0
+        ? ""
+        : allAbstain
+          ? `（${s.count > 1 ? "全員" : ""}飲まない）`
+          : `（うち飲まない${s.abstainers}人 ${yen(s.eachAbstain)}）`;
+    lines.push(`${s.tier}　${yen(allAbstain ? s.eachAbstain : s.each)}${s.count > 1 ? ` ×${s.count}人` : ""}${note}`);
   }
   lines.push("");
   lines.push(roundingNote(result, input.unit, input.rounding));
@@ -193,6 +260,8 @@ export const DEFAULT_STATE: SavedState = {
   ratio: 1.6,
   unit: 100,
   rounding: "up",
+  abstainers: [0, 0, 0, 0, 0],
+  discount: DEFAULT_DISCOUNT,
 };
 
 /** 内訳ページの URL の query にする */
@@ -203,6 +272,11 @@ export function encodeState(s: SavedState): string {
   p.set("r", clampRatio(s.ratio).toFixed(1));
   p.set("u", String(s.unit));
   p.set("m", s.rounding);
+  const abst = sanitizeAbstainers(s.abstainers, s.counts);
+  if (abst.some((a) => a > 0)) {
+    p.set("a", abst.join("-"));
+    p.set("d", String(Math.round(clampDiscount(s.discount) * 100)));
+  }
   if (s.title.trim()) p.set("n", s.title.trim().slice(0, 30));
   if (s.organizer.trim()) p.set("k", s.organizer.trim().slice(0, 20));
   return p.toString();
@@ -223,7 +297,12 @@ export function decodeState(p: Params): SavedState {
   const r = Number(one(p, "r"));
   const u = Number(one(p, "u")) as Unit;
   const m = one(p, "m");
+  const abstainers = sanitizeAbstainers((one(p, "a") ?? "").split("-").map(Number), counts);
+  const dText = one(p, "d");
+  const d = dText === undefined || dText === "" ? NaN : Number(dText) / 100;
   return {
+    abstainers,
+    discount: Number.isFinite(d) ? clampDiscount(d) : DEFAULT_DISCOUNT,
     total: one(p, "t") === undefined ? DEFAULT_STATE.total : total,
     counts,
     ratio: Number.isFinite(r) && r > 0 ? clampRatio(r) : DEFAULT_STATE.ratio,

@@ -9,6 +9,9 @@ import {
   TIERS,
   UNITS,
   buildLineText,
+  MAX_DISCOUNT,
+  MIN_DISCOUNT,
+  clampDiscount,
   clampRatio,
   computeSplit,
   encodeState,
@@ -73,10 +76,18 @@ export function SplitApp({ initial }: { initial: SavedState }) {
   const set = (patch: Partial<SavedState>) => setState((s) => ({ ...s, ...patch }));
   const setRatio = (r: number) => set({ ratio: clampRatio(r) });
   const setCount = (i: number, delta: number) =>
+    setState((s) => {
+      const counts = s.counts.map((c, j) => (j === i ? Math.min(99, Math.max(0, c + delta)) : c));
+      // 人数を減らして超えたら、飲まない人も減らす
+      return { ...s, counts, abstainers: s.abstainers.map((a, j) => Math.min(a, counts[j])) };
+    });
+  const setAbstain = (i: number, delta: number) =>
     setState((s) => ({
       ...s,
-      counts: s.counts.map((c, j) => (j === i ? Math.min(99, Math.max(0, c + delta)) : c)),
+      abstainers: s.abstainers.map((a, j) => (j === i ? Math.min(s.counts[j], Math.max(0, a + delta)) : a)),
     }));
+  const setDiscount = (delta: number) => set({ discount: clampDiscount(state.discount + delta) });
+  const hasAbstainers = state.abstainers.some((a) => a > 0);
 
   const shareOf = (i: number) => result.shares.find((s) => s.index === i);
   const top = result.shares[0];
@@ -184,6 +195,7 @@ export function SplitApp({ initial }: { initial: SavedState }) {
             {TIERS.map((tier, i) => {
               const share = shareOf(i);
               const count = state.counts[i];
+              const abstain = state.abstainers[i];
               return (
                 <li key={tier} className={`tier-row${count === 0 ? " is-zero" : ""}`}>
                   <span className="tier-tile" style={{ background: tierFill(i) }}>
@@ -205,10 +217,45 @@ export function SplitApp({ initial }: { initial: SavedState }) {
                     <span className="tier-each">{share && share.each > 0 ? yen(share.each) : "—"}</span>
                     <span className="tier-sub">{share && count > 1 && share.each > 0 ? `${count}人で ${yen(share.subtotal)}` : count === 0 ? "来ていない" : "1人分"}</span>
                   </span>
+                  {count > 0 ? (
+                    <span className="tier-abstain">
+                      <span className="tier-abstain-label">うち飲まない人</span>
+                      <span className="stepper">
+                        <button type="button" onClick={() => setAbstain(i, -1)} disabled={abstain === 0} aria-label={`${tier}の飲まない人を1人へらす`}>
+                          −
+                        </button>
+                        <output aria-live="polite" aria-label={`${tier}の飲まない人`}>
+                          {abstain}
+                          <small>人</small>
+                        </output>
+                        <button type="button" onClick={() => setAbstain(i, 1)} disabled={abstain >= count} aria-label={`${tier}の飲まない人を1人ふやす`}>
+                          ＋
+                        </button>
+                      </span>
+                      <span className="tier-each-abstain">{abstain > 0 && share ? yen(share.eachAbstain) : ""}</span>
+                    </span>
+                  ) : null}
                 </li>
               );
             })}
           </ul>
+          {hasAbstainers ? (
+            <div className="discount">
+              <p className="tilt-say">飲まない人は {Math.round(state.discount * 100)}% 引き</p>
+              <span className="stepper">
+                <button type="button" onClick={() => setDiscount(-0.1)} disabled={state.discount <= MIN_DISCOUNT} aria-label="割引率を10%へらす">
+                  −
+                </button>
+                <output aria-live="polite" aria-label="飲まない人の割引率">
+                  {Math.round(state.discount * 100)}
+                  <small>%</small>
+                </output>
+                <button type="button" onClick={() => setDiscount(0.1)} disabled={state.discount >= MAX_DISCOUNT} aria-label="割引率を10%ふやす">
+                  ＋
+                </button>
+              </span>
+            </div>
+          ) : null}
         </div>
 
         <div className="rounding">

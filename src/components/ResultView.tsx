@@ -71,7 +71,10 @@ export function ResultView({ state }: { state: SavedState }) {
                     </span>
                   </th>
                   <td className="num">{s.count}人</td>
-                  <td className="num strong">{yen(s.each)}</td>
+                  <td className="num strong">
+                    {s.abstainers === s.count ? yen(s.eachAbstain) : yen(s.each)}
+                    {s.abstainers > 0 && s.abstainers < s.count ? `（飲まない${s.abstainers}人 ${yen(s.eachAbstain)}）` : null}
+                  </td>
                   <td className="num">{yen(s.subtotal)}</td>
                 </tr>
               ))}
