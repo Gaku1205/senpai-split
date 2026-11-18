@@ -43,16 +43,19 @@ export function ResultView({ state }: { state: SavedState }) {
       </section>
 
       <section className="breakdown" aria-labelledby="breakdown-title">
-        <div className="breakdown-inner">
+        <div className={ready ? "breakdown-inner" : "breakdown-inner is-empty"}>
           <div className="breakdown-side">
             <h2 id="breakdown-title" className="breakdown-title">区分ごとの金額</h2>
             {ready ? <p className="breakdown-head">{roundingHead(result, state.rounding)}</p> : null}
             {ready ? <p className="breakdown-note">{roundingNote(result, state.unit, state.rounding)}</p> : null}
-            <p className="breakdown-note">{organizer ? `幹事の${organizer}まで、お願いします。` : "幹事まで、お願いします。"}</p>
+            {ready ? (
+              <p className="breakdown-note">{organizer ? `幹事の${organizer}まで、お願いします。` : "幹事まで、お願いします。"}</p>
+            ) : null}
             <Link className="again" href={`/?${encodeState(state)}`}>
               この内容で計算し直す
             </Link>
           </div>
+          {ready ? (
           <table className="table">
             <thead>
               <tr>
@@ -88,6 +91,7 @@ export function ResultView({ state }: { state: SavedState }) {
               </tr>
             </tfoot>
           </table>
+          ) : null}
         </div>
       </section>
     </div>

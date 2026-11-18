@@ -390,8 +390,10 @@ ul {
 }
 
 .slope-empty {
+  grid-column: 1 / -1;
   align-self: end;
   justify-self: center;
+  text-align: center;
   padding-bottom: 24px;
   font-size: var(--fs-body);
   color: var(--muted);
@@ -1197,6 +1199,11 @@ button.slope-group:active {
   color: #fff;
   font-size: 15px;
   font-weight: 700;
+}
+
+/* 金額か人数が欠けた内訳：表が無いので、見出しの欄だけを1列で置く */
+.breakdown-inner.is-empty {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .breakdown .again {
