@@ -5,12 +5,26 @@ import {
   computeSplit,
   decodeState,
   encodeState,
+  paramsToRecord,
   parseYen,
   roundingHead,
   sanitizeName,
   sanitizeNames,
   weightsFor,
 } from "./split";
+
+describe("paramsToRecord", () => {
+  it("URLSearchParams を decodeState に渡せる形にする", () => {
+    expect(paramsToRecord(new URLSearchParams("t=48600&c=1-3"))).toEqual({ t: "48600", c: "1-3" });
+  });
+  it("同じ名前が複数あれば配列にする", () => {
+    expect(paramsToRecord(new URLSearchParams("t=1&t=2&t=3"))).toEqual({ t: ["1", "2", "3"] });
+  });
+  it("encodeState → paramsToRecord → decodeState で元に戻る", () => {
+    const q = encodeState(DEFAULT_STATE);
+    expect(decodeState(paramsToRecord(new URLSearchParams(q)))).toEqual(decodeState(Object.fromEntries(new URLSearchParams(q))));
+  });
+});
 
 describe("weightsFor", () => {
   it("いちばん上が ratio、いちばん下が 1 で、まっすぐ下がる", () => {
