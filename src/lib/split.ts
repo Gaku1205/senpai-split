@@ -317,6 +317,17 @@ function one(p: Params, key: string): string | undefined {
   return Array.isArray(v) ? v[0] : v;
 }
 
+/** URLSearchParams を decodeState が受け取る形に直す（同じ名前が複数あれば配列） */
+export function paramsToRecord(sp: { forEach: (cb: (value: string, key: string) => void) => void }): Params {
+  const out: Params = {};
+  sp.forEach((value, key) => {
+    const prev = out[key];
+    if (prev === undefined) out[key] = value;
+    else out[key] = Array.isArray(prev) ? [...prev, value] : [prev, value];
+  });
+  return out;
+}
+
 /** 内訳ページの query から読む。読めない所は既定の値 */
 export function decodeState(p: Params): SavedState {
   const total = parseYen(one(p, "t") ?? "");
