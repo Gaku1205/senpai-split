@@ -10,6 +10,7 @@ import {
   roundingHead,
   sanitizeName,
   sanitizeNames,
+  tierBigEach,
   weightsFor,
 } from "./split";
 
@@ -210,5 +211,37 @@ describe("飲まない人", () => {
     expect(d.abstainers).toEqual([1, 0, 0, 3, 1]);
     expect(d.discount).toBe(0.5);
     expect(decodeState({ t: "48600", c: "1-1-1-1-1", a: "1", d: "abc" }).discount).toBe(0.3);
+  });
+});
+
+describe("画面の大きい金額（tierBigEach）", () => {
+  // 1人目〜4人目の区分: 全員飲まない・全員飲まない・飲まない人なし・一部飲まない
+  const mixed = { ...DEFAULT_STATE, counts: [1, 3, 2, 3, 1], abstainers: [1, 3, 0, 2, 0], discount: 0.3 };
+
+  it("全員が飲まない区分は、飲まない人の1人分（小計と整合する）", () => {
+    const r = computeSplit(mixed);
+    for (const i of [0, 1]) {
+      const s = r.shares[i];
+      expect(s.abstainers).toBe(s.count);
+      expect(tierBigEach(s)).toBe(s.eachAbstain);
+      expect(tierBigEach(s) * s.count).toBe(s.subtotal);
+      expect(tierBigEach(s)).toBeLessThan(s.each);
+    }
+  });
+
+  it("一部だけ飲まない区分・飲まない人がいない区分は、飲む人の1人分", () => {
+    const r = computeSplit(mixed);
+    expect(tierBigEach(r.shares[2])).toBe(r.shares[2].each);
+    expect(tierBigEach(r.shares[3])).toBe(r.shares[3].each);
+  });
+
+  it("飲まない人がいない区分は、飲む人の1人分（従来どおり）", () => {
+    const r = computeSplit({ ...DEFAULT_STATE, abstainers: [0, 0, 0, 0, 0] });
+    for (const s of r.shares) expect(tierBigEach(s)).toBe(s.each);
+  });
+
+  it("人のいない区分（0人）は 0 円", () => {
+    const base = computeSplit(mixed).shares[0];
+    expect(tierBigEach({ ...base, count: 0, abstainers: 0, each: 0, eachAbstain: 0, subtotal: 0 })).toBe(0);
   });
 });

@@ -20,6 +20,7 @@ import {
   parseYen,
   roundingHead,
   roundingNote,
+  tierBigEach,
   yen,
   type Rounding,
   type SavedState,
@@ -202,6 +203,8 @@ export function SplitApp({ initial }: { initial: SavedState }) {
               const count = state.counts[i];
               const abstain = state.abstainers[i];
               const tier = names[i];
+              // 全員が飲まないときは飲まない人の1人分（実際に払う金額）を大きく出す
+              const big = share ? tierBigEach(share) : 0;
               const typed = Array.from(state.names[i] ?? "").length;
               return (
                 <li key={i} className={`tier-row${count === 0 ? " is-zero" : ""}`}>
@@ -228,7 +231,7 @@ export function SplitApp({ initial }: { initial: SavedState }) {
                     </button>
                   </span>
                   <span className="tier-money">
-                    <span className="tier-each">{share && share.each > 0 ? yen(share.each) : "—"}</span>
+                    <span className="tier-each">{big > 0 ? yen(big) : "—"}</span>
                     <span className="tier-sub">{share && count > 1 && share.each > 0 ? `${count}人で ${yen(share.subtotal)}` : count === 0 ? "来ていない" : "1人分"}</span>
                   </span>
                   {count > 0 ? (
@@ -246,7 +249,7 @@ export function SplitApp({ initial }: { initial: SavedState }) {
                           ＋
                         </button>
                       </span>
-                      <span className="tier-each-abstain">{abstain > 0 && share ? yen(share.eachAbstain) : ""}</span>
+                      <span className="tier-each-abstain">{abstain > 0 && abstain < count && share ? yen(share.eachAbstain) : ""}</span>
                     </span>
                   ) : null}
                 </li>

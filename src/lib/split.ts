@@ -191,6 +191,11 @@ export function computeSplit(input: SplitInput): SplitResult {
   return { shares, people, collected, diff: collected - total, actualRatio };
 }
 
+/** 画面の区分の行で大きく出す1人分。区分の全員が飲まないときは飲まない人の1人分（実際に払う金額）、それ以外は飲む人の1人分 */
+export function tierBigEach(s: TierShare): number {
+  return s.count > 0 && s.abstainers === s.count ? s.eachAbstain : s.each;
+}
+
 export function yen(n: number): string {
   return `${Math.round(n).toLocaleString("ja-JP")}円`;
 }
