@@ -28,7 +28,8 @@ export function ResultView({ state }: { state: SavedState }) {
             {title}の内訳
           </h1>
           <p className="result-meta">
-            合計 {yen(state.total)}・{result.people}人・上司は新人の{state.ratio.toFixed(1)}倍
+            合計 {yen(state.total)}・{result.people}人
+            {result.shares.length > 1 ? `・${result.shares[0].tier}は${result.shares[result.shares.length - 1].tier}の${state.ratio.toFixed(1)}倍` : ""}
           </p>
           {ready ? <p className="result-hint">自分の区分の柱を押すと、金額が大きく出ます</p> : null}
         </div>
