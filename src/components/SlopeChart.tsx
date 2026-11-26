@@ -72,7 +72,7 @@ export function SlopeChart({ result, ratio, onRatio, highlight = null, onPick, e
         style={{ gridTemplateColumns: columns }}
       >
         {isEmpty ? (
-          <p className="slope-empty">{emptyText ?? "合計金額と人数を入れると、坂ができます"}</p>
+          <p className="slope-empty">{emptyText}</p>
         ) : (
           result.shares.map((s) => {
             const h = Math.max(tierBigEach(s) / max, 0.06);
