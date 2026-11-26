@@ -74,7 +74,7 @@ export function SplitApp({ initial }: { initial: SavedState }) {
   const result = useMemo(() => computeSplit(state), [state]);
   const names = useMemo(() => sanitizeNames(state.names), [state.names]);
   const query = encodeState(state);
-  const url = origin ? `${origin}/r?${query}` : undefined;
+  const url = origin ? `${origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/r?${query}` : undefined;
   const text = useMemo(() => buildLineText({ ...state, url }), [state, url]);
 
   const set = (patch: Partial<SavedState>) => setState((s) => ({ ...s, ...patch }));

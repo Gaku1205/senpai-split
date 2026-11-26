@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import type { SplitResult } from "@/lib/split";
-import { clampRatio } from "@/lib/split";
+import { clampRatio, tierBigEach } from "@/lib/split";
 import { tierFill } from "./tierColors";
 
 interface Props {
@@ -21,7 +21,7 @@ interface Props {
 /** 席順の坂：上座→下座に並ぶ人の柱。頭の高さが1人分の金額 */
 export function SlopeChart({ result, ratio, onRatio, highlight = null, onPick, emptyText, size = "large" }: Props) {
   const drag = useRef<{ y: number; r: number } | null>(null);
-  const max = Math.max(...result.shares.map((s) => s.each), 0);
+  const max = Math.max(...result.shares.map(tierBigEach), 0);
   const isEmpty = max === 0;
   const columns = result.shares.length
     ? result.shares.map((s) => `minmax(var(--slope-min), ${s.count}fr)`).join(" ")
@@ -52,7 +52,7 @@ export function SlopeChart({ result, ratio, onRatio, highlight = null, onPick, e
                 <p className={`slope-callout-figure${i === 0 ? " at-start" : i === last ? " at-end" : ""}`}>
                   <span className="slope-callout-tier">{s.tier}のあなた</span>
                   <span className="slope-callout-num">
-                    {s.each.toLocaleString("ja-JP")}
+                    {tierBigEach(s).toLocaleString("ja-JP")}
                     <small>円</small>
                   </span>
                 </p>
@@ -75,12 +75,12 @@ export function SlopeChart({ result, ratio, onRatio, highlight = null, onPick, e
           <p className="slope-empty">{emptyText ?? "合計金額と人数を入れると、坂ができます"}</p>
         ) : (
           result.shares.map((s) => {
-            const h = Math.max(s.each / max, 0.06);
+            const h = Math.max(tierBigEach(s) / max, 0.06);
             const dim = highlight !== null && highlight !== s.index;
             const inner = (
               <>
                 <span className="slope-amount">
-                  <span className="slope-num">{s.each.toLocaleString("ja-JP")}</span>
+                  <span className="slope-num">{tierBigEach(s).toLocaleString("ja-JP")}</span>
                   <span className="slope-unit">円</span>
                 </span>
                 <span className="slope-bars" style={{ height: `calc((100% - var(--slope-label)) * ${h.toFixed(4)})` }}>
@@ -100,7 +100,7 @@ export function SlopeChart({ result, ratio, onRatio, highlight = null, onPick, e
                 type="button"
                 role="radio"
                 aria-checked={highlight === s.index}
-                aria-label={`${s.tier}（${s.each.toLocaleString("ja-JP")}円）`}
+                aria-label={`${s.tier}（${tierBigEach(s).toLocaleString("ja-JP")}円）`}
                 className={`slope-group${dim ? " is-dim" : ""}`}
                 onClick={() => onPick(s.index)}
               >

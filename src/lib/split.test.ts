@@ -87,14 +87,14 @@ describe("parseYen", () => {
 
 describe("buildLineText", () => {
   it("区分の行と、端数の決まりと、幹事の名前が入る", () => {
-    const text = buildLineText({ ...DEFAULT_STATE, url: "https://senpai-split.vercel.app/r?t=48600" });
+    const text = buildLineText({ ...DEFAULT_STATE, url: "https://example.github.io/senpai-split/r?t=48600" });
     expect(text).toContain("【部署の忘年会】お会計のお知らせ");
     expect(text).toContain("合計 48,600円／10人");
     expect(text).toContain("上司　6,000円");
     expect(text).toContain("先輩　5,500円 ×3人");
     expect(text).toContain("余り400円は二次会に回します。");
     expect(text).toContain("幹事の佐藤まで、お願いします。");
-    expect(text).toContain("内訳：https://senpai-split.vercel.app/r?t=48600");
+    expect(text).toContain("内訳：https://example.github.io/senpai-split/r?t=48600");
   });
 });
 
